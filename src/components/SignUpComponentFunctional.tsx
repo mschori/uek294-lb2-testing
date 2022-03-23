@@ -11,6 +11,7 @@ import FloatingLabel from "react-bootstrap/FloatingLabel";
 // @ts-ignore
 import ReCAPTCHA from 'react-google-recaptcha';
 import 'react-phone-input-2/lib/style.css'
+import {Navigate} from 'react-router-dom';
 
 
 interface IErrors {
@@ -37,32 +38,33 @@ export default function SignUpComponentFunctional() {
     const allowedFileTypes: string[] = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     const allowedFileSize: number = 3; // MegaBytes
 
+    const [registrationSuccessfull, setRegistrationSuccessfull] = useState<boolean>(false);
     const [countryOptions, setCountryOptions] = useState<ICountry[]>([{label: '', value: '', phonePre: '+41'}]);
     const [errors, setErrors] = useState<IErrors>({});
-    const [firstname, setFirstname] = useState<string>('Michael');
-    const [lastname, setLastname] = useState<string>('Jonson');
-    const [address, setAddress] = useState<string>('Street 42');
-    const [phonePre, setPhonePre] = useState<string>('Not set');
+    const [firstname, setFirstname] = useState<string>('');
+    const [lastname, setLastname] = useState<string>('');
+    const [address, setAddress] = useState<string>('');
+    const [phonePre, setPhonePre] = useState<string>('');
     const [phonenumber, setPhonenumber] = useState<string>('');
-    const [postcode, setPostcode] = useState<string>('3076');
-    const [city, setCity] = useState<string>('York street');
+    const [postcode, setPostcode] = useState<string>('');
+    const [city, setCity] = useState<string>('');
     const [country, setCountry] = useState<string>('');
-    const [email, setEmail] = useState<string>('michael@gmx.ch');
-    const [username, setUsername] = useState<string>('Michael');
+    const [email, setEmail] = useState<string>('');
+    const [username, setUsername] = useState<string>('');
     const [usernameValidationResult, setUsernameValidationResult] = useState<boolean>(false);
-    const [password, setPassword] = useState<string>('Sml12345');
+    const [password, setPassword] = useState<string>('');
     const [passwordValidationResult, setPasswordValidationResult] = useState<boolean[]>([false, false, false]);
-    const [passwordRepeat, setPasswordRepeat] = useState<string>('Sml12345');
-    const [birthdate, setBirthdate] = useState<string>('2023-06-08');
+    const [passwordRepeat, setPasswordRepeat] = useState<string>('');
+    const [birthdate, setBirthdate] = useState<string>('');
     const [idUpload, setIdUpload] = useState<File | null>(null);
-    const [termConditions, setTermsConditions] = useState<boolean>(true);
+    const [termConditions, setTermsConditions] = useState<boolean>(false);
     const [captchaIsValid, setCaptchaIsValid] = useState<boolean>(false);
 
     useEffect(() => {
         getCountryOptions();
     }, []);
 
-    function onCaptchaChange(value: any) {
+    function onCaptchaChange(value: string) {
         const secretKey = "6LcLHc8eAAAAAAdWx_rKchrtN5MC9rt5QbhGRRtd";
         const verificationUrl = 'http://localhost:8080/https://www.google.com/recaptcha/api/siteverify?secret=' + secretKey + '&response=' + value;
         axios.post(verificationUrl)
@@ -136,6 +138,25 @@ export default function SignUpComponentFunctional() {
         setPasswordValidationResult(results);
     }
 
+    const validatePasswordRepeat = (): boolean => {
+        if (password !== passwordRepeat) {
+            setErrors(current => {
+                return {
+                    ...current,
+                    passwordRepeat: 'Has to be the same password.',
+                }
+            })
+            return false;
+        }
+        setErrors(current => {
+            delete current.passwordRepeat;
+            return {
+                ...current
+            }
+        })
+        return true;
+    }
+
     const hasError = (formId: string): boolean => {
         return errors[formId]?.length > 0;
     }
@@ -167,14 +188,7 @@ export default function SignUpComponentFunctional() {
             validationSuccess = false;
         }
 
-        // Validate passwordRepeat
-        if (password !== passwordRepeat) {
-            setErrors(current => {
-                return {
-                    ...current,
-                    passwordRepeat: 'Has to be the same password.',
-                }
-            })
+        if (!validatePasswordRepeat()) {
             validationSuccess = false;
         }
 
@@ -262,7 +276,7 @@ export default function SignUpComponentFunctional() {
             axios.post('http://localhost:3002/login', generateData())
                 .then(response => {
                     if (response.status === 200) {
-                        console.log('Success!!!!!')
+                        setRegistrationSuccessfull(true);
                     }
                 }).catch(err => {
                 if (err.response.status === 405) {
@@ -290,6 +304,9 @@ export default function SignUpComponentFunctional() {
 
     return (
         <div>
+            {registrationSuccessfull &&
+                <Navigate to={'/success'}/>
+            }
             <Container>
                 <Row className={'justify-content-center align-items-center mb-5'}>
                     <Col xs md lg={6}>
@@ -519,6 +536,7 @@ export default function SignUpComponentFunctional() {
                                                           onChange={(e) => setPasswordRepeat(e.target.value)}
                                                           value={passwordRepeat}
                                                           required
+                                                          onKeyUp={validatePasswordRepeat}
                                                           isInvalid={hasError('passwordRepeat')}/>
                                             <Form.Control.Feedback type={'invalid'}>
                                                 {errors.passwordRepeat}
@@ -552,12 +570,17 @@ export default function SignUpComponentFunctional() {
                                     <Form.Group className="mb-3" controlId="formIdUpload">
                                         <Form.Label>ID-Scan *</Form.Label>
                                         <Form.Control type="file" placeholder="Your id confirmation"
+                                                      accept={"image/jpg, image/jpeg, image/png, application/pdf"}
                                                       onChange={(e) => setIdUpload((e.target as HTMLInputElement).files![0])}
                                                       required
                                                       isInvalid={hasError('idUpload')}/>
                                         <Form.Control.Feedback type={'invalid'}>
                                             {errors.idUpload}
                                         </Form.Control.Feedback>
+                                        <Form.Text>
+                                            Max-Size: 2MB <br/>
+                                            Accepted-Formats: JPEG, JPG, PNG and PDF
+                                        </Form.Text>
                                     </Form.Group>
                                 </Col>
                             </Row>
@@ -574,13 +597,15 @@ export default function SignUpComponentFunctional() {
                             </Row>
                             <Row className={'mt-1 mb-3'}>
                                 <Col>
-                                    <ReCAPTCHA sitekey="6LcLHc8eAAAAAKbwcpinUX_bW_w9o7ui25A9rmoG"
-                                               onChange={onCaptchaChange}/>
-                                    {hasError('captcha') &&
-                                        <div style={styles.dangerFeedback}>
-                                            {errors.captcha}
-                                        </div>
-                                    }
+                                    <Form.Group>
+                                        <ReCAPTCHA sitekey="6LcLHc8eAAAAAKbwcpinUX_bW_w9o7ui25A9rmoG"
+                                                   onChange={onCaptchaChange}/>
+                                        {!captchaIsValid &&
+                                            <div style={styles.dangerFeedback}>
+                                                {errors.captcha}
+                                            </div>
+                                        }
+                                    </Form.Group>
                                 </Col>
                             </Row>
                             <Button variant="primary" type="submit">

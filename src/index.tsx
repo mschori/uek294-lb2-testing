@@ -10,20 +10,27 @@ import BootstrapComponents from "./components/BootstrapComponents";
 import SignUpComponent from "./components/SignUpComponent";
 import SignUpComponentFunctional from "./components/SignUpComponentFunctional";
 import Calculator from './components/Calculator';
+import SuccessPage from "./components/SuccessPage";
 import reportWebVitals from './reportWebVitals';
+import {BrowserRouter, Routes, Route} from "react-router-dom";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 ReactDOM.render(
     <React.StrictMode>
-        {/*<Counter initialCounter={6}/>*/}
-        {/*<CounterClass initialCounter={10}/>*/}
-        {/*<BootstrapComponents/>*/}
-        {/*<SignUpComponent />*/}
-        <SignUpComponentFunctional/>
-        {/*<First   Component/>*/}
-        {/*<UserComponent name={"Michael"} age={26} address={"Ballenbühlweg 11"} dob={new Date()}/>*/}
-        {/*<Calculator />*/}
+        <BrowserRouter>
+            <Routes>
+                <Route path={'/'} element={<SignUpComponentFunctional/>}/>
+                <Route path={'/success'} element={<SuccessPage/>}/>
+            </Routes>
+            {/*<Counter initialCounter={6}/>*/}
+            {/*<CounterClass initialCounter={10}/>*/}
+            {/*<BootstrapComponents/>*/}
+            {/*<SignUpComponent />*/}
+            {/*<First   Component/>*/}
+            {/*<UserComponent name={"Michael"} age={26} address={"Ballenbühlweg 11"} dob={new Date()}/>*/}
+            {/*<Calculator />*/}
+        </BrowserRouter>
     </React.StrictMode>,
     document.getElementById('root')
 );
