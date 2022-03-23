@@ -1,19 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
-import FirstComponent from "./components/FirstComponent";
-import UserComponent from "./components/UserComponent";
-import Counter from './components/FunctionalComponent';
-import CounterClass from "./components/ClassComponent";
-import BootstrapComponents from "./components/BootstrapComponents";
-import SignUpComponent from "./components/SignUpComponent";
 import SignUpComponentFunctional from "./components/SignUpComponentFunctional";
-import Calculator from './components/Calculator';
 import SuccessPage from "./components/SuccessPage";
 import reportWebVitals from './reportWebVitals';
 import {BrowserRouter, Routes, Route} from "react-router-dom";
 
+// Bootstrap-CSS import
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 ReactDOM.render(
@@ -23,13 +16,6 @@ ReactDOM.render(
                 <Route path={'/'} element={<SignUpComponentFunctional/>}/>
                 <Route path={'/success'} element={<SuccessPage/>}/>
             </Routes>
-            {/*<Counter initialCounter={6}/>*/}
-            {/*<CounterClass initialCounter={10}/>*/}
-            {/*<BootstrapComponents/>*/}
-            {/*<SignUpComponent />*/}
-            {/*<First   Component/>*/}
-            {/*<UserComponent name={"Michael"} age={26} address={"Ballenbühlweg 11"} dob={new Date()}/>*/}
-            {/*<Calculator />*/}
         </BrowserRouter>
     </React.StrictMode>,
     document.getElementById('root')

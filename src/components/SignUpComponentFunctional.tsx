@@ -1,29 +1,33 @@
-import React, {useState, useEffect} from 'react';
-import axios from "axios";
-import {BsFillCheckCircleFill, BsFillXCircleFill} from "react-icons/bs"
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Form from "react-bootstrap/Form";
-import Select, {SingleValue} from "react-select";
-import Button from "react-bootstrap/Button";
+import React, {useState, useEffect, ReactElement} from 'react';
+import {Container, Row, Col, Form, Button} from 'react-bootstrap';
 import FloatingLabel from "react-bootstrap/FloatingLabel";
+import {BsFillCheckCircleFill, BsFillXCircleFill} from "react-icons/bs";
+import Select, {SingleValue} from "react-select";
 // @ts-ignore
 import ReCAPTCHA from 'react-google-recaptcha';
-import 'react-phone-input-2/lib/style.css'
 import {Navigate} from 'react-router-dom';
+import axios from "axios";
 
 
+/**
+ * Interface for error-messages.
+ */
 interface IErrors {
     [key: string]: string;
 }
 
+/**
+ * Interace for country-options in country-select-field.
+ */
 interface ICountry {
     label: string,
     value: string
     phonePre: string,
 }
 
+/**
+ * Style-Object for error-messages that are not part of bootstrap.
+ */
 const styles = {
     dangerFeedback: {
         width: '100%',
@@ -33,11 +37,18 @@ const styles = {
     },
 }
 
-export default function SignUpComponentFunctional() {
+/**
+ * React Functional Component for SignUpPage.
+ */
+const SignUpComponentFunctional: React.FC = (): ReactElement => {
 
-    const allowedFileTypes: string[] = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    const allowedFileSize: number = 3; // MegaBytes
+    // Constants
+    const URL_REST_COUNTRIES: string = 'https://restcountries.com/v3.1/all';
+    const URL_BACKEND: string = 'http://localhost:3002/login';
+    const ALLOWED_FILE_TYPES: string[] = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const ALLOWED_FILE_SIZE: number = 3; // in MegaBytes
 
+    // Hoocks
     const [registrationSuccessfull, setRegistrationSuccessfull] = useState<boolean>(false);
     const [countryOptions, setCountryOptions] = useState<ICountry[]>([{label: '', value: '', phonePre: '+41'}]);
     const [errors, setErrors] = useState<IErrors>({});
@@ -60,32 +71,40 @@ export default function SignUpComponentFunctional() {
     const [termConditions, setTermsConditions] = useState<boolean>(false);
     const [captchaIsValid, setCaptchaIsValid] = useState<boolean>(false);
 
+    // Use-Effect.
+    // Execute only one time.
     useEffect(() => {
         getCountryOptions();
     }, []);
 
-    function onCaptchaChange(value: string) {
+    /**
+     * Verify captcha-token with google-backend.
+     * @param value captcha-token from google-captcha-plugin
+     */
+    const onCaptchaChange = (value: string): void => {
+        // TODO Move to env-variables -> delete from repository.
         const secretKey = "6LcLHc8eAAAAAAdWx_rKchrtN5MC9rt5QbhGRRtd";
         const verificationUrl = 'http://localhost:8080/https://www.google.com/recaptcha/api/siteverify?secret=' + secretKey + '&response=' + value;
         axios.post(verificationUrl)
             .then(response => {
                 console.log(response);
-                if (response.data.success) {
-                    setCaptchaIsValid(true);
-                } else {
-                    setCaptchaIsValid(false);
-                }
+                setCaptchaIsValid(response.data.success);
             })
             .catch(err => {
                 console.log(err);
                 setCaptchaIsValid(false);
-            })
+            });
     }
 
-    const getCountryOptions = () => {
+    /**
+     * Get all countries from restcountries.com.
+     * Create country<ICountry> Object for all countries
+     * and add to the country-options hook.
+     */
+    const getCountryOptions = (): void => {
         let countryOptions: ICountry[] = [];
 
-        axios.get('https://restcountries.com/v3.1/all')
+        axios.get(URL_REST_COUNTRIES)
             .then(response => {
                 response.data.forEach(function (country: any) {
                     countryOptions.push({
@@ -107,26 +126,45 @@ export default function SignUpComponentFunctional() {
             });
     }
 
-    const setCountryAndPhonePre = (event: SingleValue<ICountry>) => {
-        setCountry(event!.label);
-        setPhonenumber(`${event!.phonePre} ${phonenumber.replace(phonePre, '').replace(' ', '')}`);
-        setPhonePre(event!.phonePre);
+    /**
+     * Set selected country, phone-prefix and new phonenumber with prefix.
+     * @param country selected country
+     */
+    const setCountryAndPhonePre = (country: SingleValue<ICountry>): void => {
+        setCountry(country!.label);
+        setPhonenumber(`${country!.phonePre} ${phonenumber.replace(phonePre, '').replace(' ', '')}`);
+        setPhonePre(country!.phonePre);
     }
 
-    const renderCountryOptions = (props: any) => {
-        const {innerProps, innerRef} = props;
+    /**
+     * Render layout for a country-option in the country-select-field.
+     * @param props properties from select-component
+     */
+    const renderCountryOptions = (props: any): ReactElement => {
         return (
-            <div ref={innerRef} {...innerProps}>
+            <div ref={props.innerProps} {...props.innerRef}>
                 <img src={props.data.value} style={{width: 30}} alt=""/>
                 <span className={'ms-2'}>{props.data.label}</span>
             </div>
         );
     };
 
+    /**
+     * Validate username.
+     * Rules:
+     *  - At least 5 characters
+     */
     const validateUsername = (): void => {
         username.length < 5 ? setUsernameValidationResult(false) : setUsernameValidationResult(true);
     }
 
+    /**
+     * Validate password.
+     * Rules:
+     *  - At least 8 characters
+     *  - At least one special character
+     *  - At least one number
+     */
     const validatePassword = (): void => {
         let results = [false, false, false];
         let formatSC = /[ `!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/;
@@ -138,6 +176,11 @@ export default function SignUpComponentFunctional() {
         setPasswordValidationResult(results);
     }
 
+    /**
+     * Validate password-repeat.
+     * Rules:
+     *  - Has to be the same input as password
+     */
     const validatePasswordRepeat = (): boolean => {
         if (password !== passwordRepeat) {
             setErrors(current => {
@@ -145,7 +188,7 @@ export default function SignUpComponentFunctional() {
                     ...current,
                     passwordRepeat: 'Has to be the same password.',
                 }
-            })
+            });
             return false;
         }
         setErrors(current => {
@@ -153,17 +196,27 @@ export default function SignUpComponentFunctional() {
             return {
                 ...current
             }
-        })
+        });
         return true;
     }
 
-    const hasError = (formId: string): boolean => {
-        return errors[formId]?.length > 0;
+    /**
+     * Check if given key is in error-object.
+     * If key is found then an error for this field is present.
+     * @param key key to find in object
+     */
+    const hasError = (key: string): boolean => {
+        return errors[key]?.length > 0;
     }
 
+    /**
+     * Validate the whole form.
+     * Some fields are validated through the required-tag in html.
+     * Some fields are validated through a separate function.
+     */
     const validateForm = (): boolean => {
-        // Clean error-messages
-        setErrors({})
+        // Clean error-object
+        setErrors({});
         let validationSuccess: boolean = true;
 
         // Validate username
@@ -173,7 +226,7 @@ export default function SignUpComponentFunctional() {
                     ...current,
                     username: 'You have to fulfill the requirements.',
                 }
-            })
+            });
             validationSuccess = false;
         }
 
@@ -184,42 +237,43 @@ export default function SignUpComponentFunctional() {
                     ...current,
                     password: 'You have to fulfill all requirements.',
                 }
-            })
+            });
             validationSuccess = false;
         }
 
+        // Validate password-repeat
         if (!validatePasswordRepeat()) {
             validationSuccess = false;
         }
 
-        // Validate country
+        // Validate country-selection
         if (!(country.length > 3)) {
             setErrors(current => {
                 return {
                     ...current,
                     country: 'Please select a country!',
                 }
-            })
+            });
             validationSuccess = false;
         }
 
-        // Validate idUpload
-        if (!allowedFileTypes.includes(String(idUpload?.type))) {
+        // Validate idUpload -> Type and Size
+        if (!ALLOWED_FILE_TYPES.includes(String(idUpload?.type))) {
             setErrors(current => {
                 return {
                     ...current,
                     idUpload: 'Only formats jpg, jpeg, png and pdf are allowed!',
                 }
-            })
+            });
             validationSuccess = false;
         } else if (idUpload?.size) {
-            if ((idUpload.size / 1024 / 1024) > allowedFileSize) {
+            if ((idUpload.size / 1024 / 1024) > ALLOWED_FILE_SIZE) {
                 setErrors(current => {
                     return {
                         ...current,
                         idUpload: 'Your file is too large!',
                     }
-                })
+                });
                 validationSuccess = false;
             }
         }
@@ -227,14 +281,14 @@ export default function SignUpComponentFunctional() {
         // Validate birthdate
         let birthdateInput = new Date(birthdate);
         let today = new Date();
-        let difference = today.getMonth() - birthdateInput.getMonth() + (12 * (today.getFullYear() - birthdateInput.getFullYear()))
+        let difference = today.getMonth() - birthdateInput.getMonth() + (12 * (today.getFullYear() - birthdateInput.getFullYear()));
         if (new Date(birthdate) >= new Date() || difference < 18) {
             setErrors(current => {
                 return {
                     ...current,
                     birthdate: 'You have to be 18 years old!',
                 }
-            })
+            });
             validationSuccess = false;
         }
 
@@ -245,35 +299,42 @@ export default function SignUpComponentFunctional() {
                     ...current,
                     captcha: 'Please solve the reCAPTCHA!',
                 }
-            })
+            });
             validationSuccess = false;
         }
 
         return validationSuccess;
     }
 
+    /**
+     * Generate the formData for axios.
+     */
     const generateData = (): FormData => {
-        const formData = new FormData()
-        formData.append("name", `${firstname} ${lastname}`)
-        formData.append('address', address)
-        formData.append('city', city)
-        formData.append('phoneNumber', `${phonePre}${phonenumber}`)
-        formData.append('postcode', postcode)
-        formData.append('country', country)
-        formData.append('username', username)
-        formData.append('email', email)
-        formData.append('password', password)
-        formData.append('dateOfBirth', birthdate)
+        const formData = new FormData();
+        formData.append("name", `${firstname} ${lastname}`);
+        formData.append('address', address);
+        formData.append('city', city);
+        formData.append('phoneNumber', `${phonePre}${phonenumber}`);
+        formData.append('postcode', postcode);
+        formData.append('country', country);
+        formData.append('username', username);
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('dateOfBirth', birthdate);
         // @ts-ignore
         formData.append('idConfirmation', idUpload);
-
         return formData;
     }
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    /**
+     * Handle form-submit.
+     * Send data to backend after form-validation.
+     * @param e submit-event
+     */
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
         if (validateForm()) {
-            axios.post('http://localhost:3002/login', generateData())
+            axios.post(URL_BACKEND, generateData())
                 .then(response => {
                     if (response.status === 200) {
                         setRegistrationSuccessfull(true);
@@ -285,14 +346,13 @@ export default function SignUpComponentFunctional() {
                     } else if (err.response.data === 'Email already taken') {
                         setErrors({...errors, email: 'Email already taken...'});
                     } else if (err.response.data === 'Both already taken') {
-                        // setErrors({...errors, username: 'Username already taken...'}); // Not working in FK
                         setErrors(current => {
                             return {
                                 ...current,
                                 username: 'Username already taken...',
                                 email: 'Email already taken...'
                             }
-                        })
+                        });
                     }
                 } else {
                     console.log('Unknown error...')
@@ -302,17 +362,26 @@ export default function SignUpComponentFunctional() {
         }
     };
 
+    /**
+     * HTML-Code for this component.
+     */
     return (
         <div>
+            {/* Forward to success-page after registration-success. */}
             {registrationSuccessfull &&
                 <Navigate to={'/success'}/>
             }
             <Container>
                 <Row className={'justify-content-center align-items-center mb-5'}>
                     <Col xs md lg={6}>
+
+                        {/* Title */}
                         <div className={'display-4 text-center m-4'}>Sign up</div>
+
+                        {/* Form */}
                         <Form onSubmit={handleSubmit} validated={false}>
                             <Row>
+                                {/* Firstname-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formFirstname">
                                         <FloatingLabel
@@ -331,6 +400,8 @@ export default function SignUpComponentFunctional() {
                                         </FloatingLabel>
                                     </Form.Group>
                                 </Col>
+
+                                {/* Lastname-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formLastname">
                                         <FloatingLabel
@@ -351,6 +422,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Address-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formAddress">
                                         <FloatingLabel
@@ -369,6 +442,8 @@ export default function SignUpComponentFunctional() {
                                         </FloatingLabel>
                                     </Form.Group>
                                 </Col>
+
+                                {/* Phonenumber-Field*/}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formPhone">
                                         <FloatingLabel
@@ -388,6 +463,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Postcode-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formPostcode">
                                         <FloatingLabel
@@ -406,6 +483,8 @@ export default function SignUpComponentFunctional() {
                                         </FloatingLabel>
                                     </Form.Group>
                                 </Col>
+
+                                {/* City-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formCity">
                                         <FloatingLabel
@@ -426,6 +505,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Country-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formCountry">
                                         <Select options={countryOptions}
@@ -443,6 +524,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* E-Mail-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formEmail">
                                         <FloatingLabel
@@ -461,6 +544,8 @@ export default function SignUpComponentFunctional() {
                                         </FloatingLabel>
                                     </Form.Group>
                                 </Col>
+
+                                {/* Username-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formUsername">
                                         <FloatingLabel
@@ -488,6 +573,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Password-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formPassword">
                                         <FloatingLabel
@@ -525,6 +612,8 @@ export default function SignUpComponentFunctional() {
                                         </Form.Text>
                                     </Form.Group>
                                 </Col>
+
+                                {/* Password-Repeat-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formPasswordRepeat">
                                         <FloatingLabel
@@ -546,6 +635,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Birthdate-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formBirthdate">
                                         <FloatingLabel
@@ -566,6 +657,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row>
+
+                                {/* Image-Upload-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formIdUpload">
                                         <Form.Label>ID-Scan *</Form.Label>
@@ -585,6 +678,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row className={'mt-3 mb-3'}>
+
+                                {/* Terms-and-Conditions-Field */}
                                 <Col>
                                     <Form.Group className="mb-3" controlId="formTermsConditions">
                                         <Form.Check type="checkbox"
@@ -596,6 +691,8 @@ export default function SignUpComponentFunctional() {
                                 </Col>
                             </Row>
                             <Row className={'mt-1 mb-3'}>
+
+                                {/* Google-Captcha-Field */}
                                 <Col>
                                     <Form.Group>
                                         <ReCAPTCHA sitekey="6LcLHc8eAAAAAKbwcpinUX_bW_w9o7ui25A9rmoG"
@@ -608,6 +705,8 @@ export default function SignUpComponentFunctional() {
                                     </Form.Group>
                                 </Col>
                             </Row>
+
+                            {/* Submit-Button */}
                             <Button variant="primary" type="submit">
                                 Submit
                             </Button>
@@ -618,3 +717,5 @@ export default function SignUpComponentFunctional() {
         </div>
     );
 }
+
+export default SignUpComponentFunctional;
